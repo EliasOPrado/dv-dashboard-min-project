@@ -10,6 +10,10 @@ function makeGraphs(error, salaryData) { //BOILER PLAITE
     })
 
     show_discipline_selector(ndx);
+
+    show_percentage_that_are_professors(ndx, "#Female", "#percentage-of-women-professor");
+    show_percentage_that_are_professors(ndx, "#Male", "#percentage-of-men-professor");
+
     show_gender_balance(ndx); // will be declared on the show_gender_balance function..
     show_average_salaries(ndx);
     show_rank_distribution(ndx);
@@ -24,6 +28,46 @@ function show_discipline_selector(ndx) { // followed by the first div discipline
     dc.selectMenu('#discipline-selector') //DC -- SELECT MENU TYPE <<
         .dimension(dim)
         .group(group);
+}
+
+
+function show_percentage_that_are_professors(ndx, gender, element) {
+
+    var percentageThatAreProf = ndx.groupAll().reduce(
+        function(p, v) {
+            if (v.sex === gender) {
+                p.count++;
+                if (v.rank === "Prof") {
+                    p.are_prof++;
+                }
+            }
+            return p;
+        },
+        function(p, v) {
+            if (v.sex === gender) {
+                p.count--;
+                if (v.rank === "Prof") {
+                    p.are_prof++;
+                }
+            }
+            return p;
+        },
+        function() {
+            return { count: 0, are_prof: 0 };
+        }
+    );
+
+    dc.numberDisplay(element)
+        .formatNumber(d3.format(".2%"))
+        .valueAccessor(function(d) {
+            if (d.count == 0) {
+                return 0;
+            }
+            else {
+                return (d.are_prof / d.count);
+            }
+        })
+        .group(percentageThatAreProf);
 }
 
 function show_gender_balance(ndx) { //followed by the first div gender-balance.
@@ -94,8 +138,8 @@ function show_rank_distribution(ndx) {
 
 
     function rankByGender(dimension, rank) {
-        
-       return dimension.group().reduce(
+
+        return dimension.group().reduce(
 
             function(p, v) {
                 p.total++;
@@ -112,32 +156,33 @@ function show_rank_distribution(ndx) {
                 return p;
             },
             function() {
-                return {total: 0, match: 0 };
+                return { total: 0, match: 0 };
             }
         );
     }
-    
+
     var dim = ndx.dimension(dc.pluck("sex"));
     var ProfByGender = rankByGender(dim, "Prof");
     var asstProfByGender = rankByGender(dim, "AsstProf");
     var assocProfByGender = rankByGender(dim, "AssocProf");
-    
+
     dc.barChart('#rank-distribution')
-    .width(400)
-    .height(300)
-    .dimension(dim)
-    .group(ProfByGender, "Prof")
-    .stack(asstProfByGender, "Asst Prof")
-    .stack(assocProfByGender, "Assoc Prof")
-    .valueAccessor(function (d){
-        if(d.value.total > 0){
-            return (d.value.match / d.value.total) * 100;
-        }else{
-            return 0;
-        }
-    })
-    .x(d3.scale.ordinal())
-    .xUnits(dc.units.ordinal)
-    .legend(dc.legend().x(320).y(20).itemHeight(15).gap(5))
-    .margins({top: 10, right: 100, bottom: 30, left: 30});
+        .width(400)
+        .height(300)
+        .dimension(dim)
+        .group(ProfByGender, "Prof")
+        .stack(asstProfByGender, "Asst Prof")
+        .stack(assocProfByGender, "Assoc Prof")
+        .valueAccessor(function(d) {
+            if (d.value.total > 0) {
+                return (d.value.match / d.value.total) * 100;
+            }
+            else {
+                return 0;
+            }
+        })
+        .x(d3.scale.ordinal())
+        .xUnits(dc.units.ordinal)
+        .legend(dc.legend().x(320).y(20).itemHeight(15).gap(5))
+        .margins({ top: 10, right: 100, bottom: 30, left: 30 });
 }
