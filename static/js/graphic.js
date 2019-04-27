@@ -7,16 +7,19 @@ function makeGraphs(error, salaryData) { //BOILER PLAITE
 
     salaryData.forEach(function(d) {
         d.salary = parseInt(d.salary);
+        d.yrs_service = parseInt(d["yrs.service"]);
     })
 
     show_discipline_selector(ndx);
 
-    show_percentage_that_are_professors(ndx, "#Female", "#percentage-of-women-professor");
-    show_percentage_that_are_professors(ndx, "#Male", "#percentage-of-men-professor");
+    show_percentage_that_are_professors(ndx, "Female", "#percentage-of-women-professor");
+    show_percentage_that_are_professors(ndx, "Male", "#percentage-of-men-professor");
 
     show_gender_balance(ndx); // will be declared on the show_gender_balance function..
     show_average_salaries(ndx);
     show_rank_distribution(ndx);
+    
+    show_service_to_salary_correlation(ndx);
 
     dc.renderAll();
 }
@@ -57,7 +60,7 @@ function show_percentage_that_are_professors(ndx, gender, element) {
         }
     );
 
-    dc.numberDisplay(element)
+    dc.numberDisplay(element)//element displays the id path such as #percentage-of-men-professor
         .formatNumber(d3.format(".2%"))
         .valueAccessor(function(d) {
             if (d.count == 0) {
@@ -185,4 +188,30 @@ function show_rank_distribution(ndx) {
         .xUnits(dc.units.ordinal)
         .legend(dc.legend().x(320).y(20).itemHeight(15).gap(5))
         .margins({ top: 10, right: 100, bottom: 30, left: 30 });
+}
+
+function show_service_to_salary_correlation(ndx){
+    var eDim = ndx.dimension(dc.pluck("yrs_service"));
+    var experienceDim = ndx.dimension(function (d){
+        return [d.yrs_service, d.salary];
+    });
+    var experienceSalaryGroup = experienceDim.group();
+    
+    var minExperience = eDim.bottom(1)[0].yrs_service;
+    var maxExperience = eDim.top(1)[0].yrs_service;
+    
+    dc.scatterPlot("#service-salary")
+        .width(800)
+        .height(400)
+        .x(d3.scale.linear().domain([minExperience, maxExperience]))
+        .brushOn(true)
+        .symbolSize(8)
+        .clipPadding(10)
+        .yAxisLabel("Years of Service")
+        .title(function (d){
+            return "Earned " + d.key[1];
+        })
+        .dimension(experienceDim)
+        .group(experienceSalaryGroup)
+        .margins({top: 10, right: 50, bottom: 75, left: 75});
 }
